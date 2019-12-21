@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.ckr</groupId>
+    <artifactId>catlet-core</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>org.ckr</groupId>
+        <artifactId>catlet</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <url>http://catlet.ckr.org</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.sourceforge.plantuml</groupId>
+            <artifactId>plantuml</artifactId>
+            <version>1.2019.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hibernate.javax.persistence</groupId>
+            <artifactId>hibernate-jpa-2.1-api</artifactId>
+            <version>1.0.0.Final</version>
+        </dependency>
+    </dependencies>
+
+
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.9</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>index</report>
+                            <!--<report>dependency-convergence</report>-->
+                            <!--<report>dependency-info</report>-->
+                            <!--<report>dependencies</report>-->
+                            <!--<report>modules</report>-->
+                            <!--<report>plugin-management</report>-->
+                            <!--<report>plugins</report>-->
+                        </reports>
+                    </reportSet>
+                </reportSets>
+                <configuration>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <show>protected</show>
+                    <docencoding>UTF-8</docencoding>
+                    <encoding>UTF-8</encoding>
+                    <charset>UTF-8</charset>
+                    <!-- 8 must be used here. If use >=9, the javadoc command will try to build the document
+                    in module mode. Since the JDK classes are not under any module, when the javadoc try to link
+                    those classes's offline document, the javadoc command will return error.-->
+                    <source>8</source>
+                    <!--<detectJavaApiLink>false</detectJavaApiLink>-->
+                    <taglets>
+                        <taglet>
+                            <tagletClass>org.ckr.catlet.plantuml.PlantumlTaglet</tagletClass>
+                            <tagletArtifact>
+                                <groupId>org.ckr</groupId>
+                                <artifactId>catlet-core</artifactId>
+                                <version>1.0-SNAPSHOT</version>
+                            </tagletArtifact>
+                        </taglet>
+
+                    </taglets>
+                </configuration>
+                <reportSets>
+                    <!-- generate javadoc for production code only -->
+                    <reportSet>
+                        <id>javadoc</id>
+                        <configuration>
+                        </configuration>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+
+        </plugins>
+    </reporting>
+
+</project>
