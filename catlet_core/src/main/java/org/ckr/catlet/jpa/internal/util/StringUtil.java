@@ -1,4 +1,4 @@
-package org.ckr.catlet.jpa.internal;
+package org.ckr.catlet.jpa.internal.util;
 
 public class StringUtil {
 

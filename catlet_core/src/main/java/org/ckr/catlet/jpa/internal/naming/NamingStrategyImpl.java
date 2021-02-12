@@ -1,7 +1,10 @@
 package org.ckr.catlet.jpa.internal.naming;
 
 import org.ckr.catlet.jpa.NamingStrategy;
+import org.ckr.catlet.jpa.internal.util.ParseUtil;
+import org.ckr.catlet.jpa.internal.util.NamingUtil;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
 public class NamingStrategyImpl implements NamingStrategy {
@@ -10,21 +13,15 @@ public class NamingStrategyImpl implements NamingStrategy {
 
         String className = typeElement.getSimpleName().toString();
 
-        StringBuilder result = new StringBuilder();
+        return NamingUtil.convertCamelCaseToUnderScoreCase(className);
 
-        for(int i = 0; i < className.length(); i++ ) {
-            char ch = className.charAt(i);
+    }
 
-            result.append(Character.toUpperCase(ch));
+    @Override
+    public String getColumnName(Element element) {
+        String colName = ParseUtil.getJavaPropertyName(element);
 
-            if(Character.isLowerCase(ch) &&
-                    (i + 1) < className.length() &&
-                    Character.isUpperCase(className.charAt(i + 1))) {
+        return NamingUtil.convertCamelCaseToUnderScoreCase(colName);
 
-                result.append('_');
-            }
-        }
-
-        return result.toString();
     }
 }

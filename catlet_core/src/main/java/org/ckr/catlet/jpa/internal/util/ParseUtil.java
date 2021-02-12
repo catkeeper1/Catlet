@@ -1,4 +1,4 @@
-package org.ckr.catlet.jpa.internal;
+package org.ckr.catlet.jpa.internal.util;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
@@ -94,6 +94,51 @@ public class ParseUtil {
 
     public static boolean isMethodElement(Element element) {
         return element instanceof ExecutableElement && ElementKind.METHOD.equals(element.getKind());
+    }
+
+    /**
+     * If element is a field, just return the simple name, if element is a get/set method
+     * for a field, return the substring of the simple name after "get"/"set"
+     */
+    public static String getJavaPropertyName(Element element) {
+        String simpleName = element.getSimpleName().toString();
+
+        if (isFieldElement(element)) {
+            return simpleName;
+        }
+
+        if (isMethodElement(element) &&
+            simpleName.length() > 3 &&
+           (simpleName.startsWith("get") ||
+            simpleName.startsWith("set"))) {
+            return NamingUtil.convertPascalCaseToCamelCase(simpleName.substring(3));
+        }
+
+        return null;
+    }
+
+    public static String getJavaPropertyType(Element element) {
+        String simpleName = element.getSimpleName().toString();
+
+        if (isFieldElement(element)) {
+            VariableElement varElement = (VariableElement) element;
+            return varElement.asType().toString();
+        }
+
+        if (isMethodElement(element) &&
+                simpleName.length() > 3 ) {
+            ExecutableElement exeElement = (ExecutableElement) element;
+
+            if(simpleName.startsWith("get") && exeElement.getParameters().isEmpty()) {
+                return exeElement.getReturnType().toString();
+            }
+
+            if(simpleName.startsWith("set") && exeElement.getParameters().size() == 1) {
+                return exeElement.getParameters().get(0).toString();
+            }
+        }
+
+        return null;
     }
 
     public static boolean isGetSetMethodsExist(Element fieldElement, TypeElement classElement) {

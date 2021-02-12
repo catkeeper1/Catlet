@@ -1,7 +1,7 @@
 package org.ckr.catlet.jpa.internal.parser;
 
 import jdk.javadoc.doclet.Reporter;
-import org.ckr.catlet.jpa.internal.ParseUtil;
+import org.ckr.catlet.jpa.internal.util.ParseUtil;
 import org.ckr.catlet.jpa.internal.naming.NamingStrategyHolder;
 import org.ckr.catlet.jpa.internal.vo.Table;
 
@@ -54,7 +54,9 @@ public class TableParser {
         reporter.print(NOTE, "parse class: " + typeElement.getQualifiedName().toString());
 
         Table table = new Table();
-        table.setTableName(getTableName(typeElement));
+        table.setExplicitName(getExplicitTableName(typeElement));
+        table.setImplicitName(getImplicitTableName(typeElement));
+
         table.setPackageName(ParseUtil.getPackageName(typeElement));
         table.setClassName(typeElement.getSimpleName().toString());
 
@@ -69,7 +71,7 @@ public class TableParser {
 
     }
 
-    private String getTableName(TypeElement typeElement) {
+    private String getExplicitTableName(TypeElement typeElement) {
 
         AnnotationMirror tableAnnotation =
                 ParseUtil.getAnnotationMirrorFromElement(typeElement, javax.persistence.Table.class);
@@ -83,11 +85,11 @@ public class TableParser {
             }
         }
 
-        return getTableNameFromClassName(typeElement);
+        return null;
 
     }
 
-    private String getTableNameFromClassName(TypeElement typeElement) {
+    private String getImplicitTableName(TypeElement typeElement) {
 
         return NamingStrategyHolder.getStrategy().getTableName(typeElement);
 

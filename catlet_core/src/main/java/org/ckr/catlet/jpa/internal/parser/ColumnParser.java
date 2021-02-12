@@ -1,7 +1,8 @@
 package org.ckr.catlet.jpa.internal.parser;
 
 import jdk.javadoc.doclet.Reporter;
-import org.ckr.catlet.jpa.internal.ParseUtil;
+import org.ckr.catlet.jpa.internal.util.ParseUtil;
+import org.ckr.catlet.jpa.internal.naming.NamingStrategyHolder;
 import org.ckr.catlet.jpa.internal.vo.Column;
 
 import javax.lang.model.element.*;
@@ -14,10 +15,10 @@ import javax.persistence.MappedSuperclass;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.ckr.catlet.jpa.internal.ParseUtil.*;
+import static org.ckr.catlet.jpa.internal.util.ParseUtil.*;
 
 import static javax.tools.Diagnostic.Kind.*;
-import static org.ckr.catlet.jpa.internal.ParseUtil.isFieldElement;
+import static org.ckr.catlet.jpa.internal.util.ParseUtil.isFieldElement;
 
 public class ColumnParser {
     private Reporter reporter;
@@ -38,11 +39,13 @@ public class ColumnParser {
         }
 
         if(AccessType.FIELD.equals(accessType)) {
-            reporter.print(NOTE, "Access type is field");
+            reporter.print(NOTE, "parse columns from fields");
 
             result = parseFromFields(classElement);
         } else {
-            reporter.print(NOTE, "Access type is property");
+            reporter.print(NOTE, "parse columns from get methods");
+
+            result = parseFromGetMethods(classElement);
         }
 
         return result;
@@ -97,40 +100,83 @@ public class ColumnParser {
                 continue;
             }
 
-            reporter.print(NOTE, "create column for field element" + element.getSimpleName());
+            reporter.print(NOTE, "create column for field element " + element.getSimpleName());
 
             reporter.print(NOTE, "element type " + element.asType());
 
             Column column = new Column();
 
-            column.setComment(treeUtil.getDocComment(element));
-
-            AnnotationMirror columnAnnotation =
-                    getAnnotationMirrorFromElement(element, javax.persistence.Column.class);
-
-            if(columnAnnotation != null) {
-                String name =
-                        getAnnotationAttributeStringValue("name",
-                                               columnAnnotation);
-
-                if(name != null && name.trim().length() > 0) {
-                    column.setExplicitName(name);
-                }
-
-                column.setColumnDefinition(getAnnotationAttributeStringValue("columnDefinition",
-                                                                             columnAnnotation));
-
-                column.setNullable(getAnnotationAttributeBooleanValue("nullable",
-                        columnAnnotation));
-
-                column.setLength(getAnnotationAttributeIntegerValue("length",
-                                                                    columnAnnotation));
-            }
-
-
+            updateColumnObj(column, element);
             result.add(column);
         }
 
         return result;
+    }
+
+    private List<Column> parseFromGetMethods(TypeElement classElement) {
+        List<Column> result = new ArrayList<>();
+
+        for( Element element: classElement.getEnclosedElements()) {
+            if(!(element instanceof ExecutableElement)) {
+                continue;
+            }
+
+            ExecutableElement exeElement = (ExecutableElement) element;
+
+            if (!(isMethodElement(element)) ||
+                 element.getModifiers().contains(Modifier.STATIC) ||
+                 !element.getSimpleName().toString().startsWith("get") ||
+                 !exeElement.getParameters().isEmpty() ) {
+                continue;
+            }
+
+            reporter.print(NOTE, "create column for get method " + exeElement.getSimpleName());
+
+            reporter.print(NOTE, "element type " + exeElement.getReturnType());
+
+            Column column = new Column();
+
+            updateColumnObj(column, element);
+            result.add(column);
+        }
+
+        return result;
+    }
+
+    private void updateColumnObj(Column column, Element element) {
+        column.setComment(treeUtil.getDocComment(element));
+
+        AnnotationMirror columnAnnotation =
+                getAnnotationMirrorFromElement(element, javax.persistence.Column.class);
+
+        AnnotationMirror idAnnotation =
+                getAnnotationMirrorFromElement(element, javax.persistence.Id.class);
+
+        if(idAnnotation != null) {
+            column.setPrimaryKey(true);
+        }
+
+        if(columnAnnotation != null) {
+            String name =
+                    getAnnotationAttributeStringValue("name",
+                            columnAnnotation);
+
+            if(name != null && name.trim().length() > 0) {
+                column.setExplicitName(name);
+            }
+            column.setColumnDefinition(getAnnotationAttributeStringValue("columnDefinition",
+                    columnAnnotation));
+
+            column.setNullable(getAnnotationAttributeBooleanValue("nullable",
+                    columnAnnotation));
+
+            column.setLength(getAnnotationAttributeIntegerValue("length",
+                    columnAnnotation));
+
+        }
+
+        column.setImplicitName(NamingStrategyHolder.getStrategy().getColumnName(element));
+        column.setJavaFieldType(ParseUtil.getJavaPropertyType(element));
+        column.setJavaPropertyName(ParseUtil.getJavaPropertyName(element));
     }
 }

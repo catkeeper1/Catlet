@@ -15,6 +15,9 @@ public class FunctionPoint  {
 
     private static final long serialVersionUID = -8148548168711916671L;
 
+    /**
+     * The unique ID of function point.
+     */
     @Id
     @Column(name = "FUN_POINT_CODE", unique = true, nullable = false, length = 100)
     private String functionPointCode;

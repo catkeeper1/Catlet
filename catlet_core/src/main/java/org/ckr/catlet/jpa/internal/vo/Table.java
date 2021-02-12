@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.StringJoiner;
 
 public class Table {
-    private String tableName = null;
+    private String implicitName;
+
+    private String explicitName;
 
     private String packageName = null;
 
@@ -20,12 +22,20 @@ public class Table {
 
     private String comment;
 
-    public String getTableName() {
-        return tableName;
+    public String getImplicitName() {
+        return implicitName;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public void setImplicitName(String implicitName) {
+        this.implicitName = implicitName;
+    }
+
+    public String getExplicitName() {
+        return explicitName;
+    }
+
+    public void setExplicitName(String explicitName) {
+        this.explicitName = explicitName;
     }
 
     public String getPackageName() {
@@ -79,7 +89,8 @@ public class Table {
     @Override
     public String toString() {
         return new StringJoiner(", ", Table.class.getSimpleName() + "[", "]")
-                .add("tableName='" + tableName + "'")
+                .add("implicitName='" + implicitName + "'")
+                .add("explicitName='" + explicitName + "'")
                 .add("packageName='" + packageName + "'")
                 .add("className='" + className + "'")
                 .add("indexList=" + indexList)
