@@ -3,7 +3,6 @@ package org.ckr.catlet.jpa.internal.vo;
 import java.util.StringJoiner;
 
 public class Column {
-    private String name = null;
 
     private Boolean nullable = true;
 
@@ -27,13 +26,7 @@ public class Column {
 
     private String comment;
 
-    public String getName() {
-        return name;
-    }
 
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public Boolean getNullable() {
         return nullable;
@@ -126,7 +119,6 @@ public class Column {
     @Override
     public String toString() {
         return new StringJoiner(", ", Column.class.getSimpleName() + "[", "]")
-                .add("name='" + name + "'")
                 .add("nullable=" + nullable)
                 .add("isPrimaryKey=" + isPrimaryKey)
                 .add("columnDefinition='" + columnDefinition + "'")
