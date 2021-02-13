@@ -1,18 +1,17 @@
 package org.ckr.catlet.jpa.internal.parser;
 
 import jdk.javadoc.doclet.Reporter;
+import net.sourceforge.plantuml.bpm.Col;
 import org.ckr.catlet.jpa.internal.util.ParseUtil;
 import org.ckr.catlet.jpa.internal.naming.NamingStrategyHolder;
 import org.ckr.catlet.jpa.internal.vo.Column;
 
 import javax.lang.model.element.*;
 import javax.lang.model.util.Elements;
-import javax.persistence.Access;
-import javax.persistence.AccessType;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.ckr.catlet.jpa.internal.util.ParseUtil.*;
@@ -30,25 +29,15 @@ public class ColumnParser {
     }
 
     public List<Column> parseColumns(TypeElement classElement) {
-        List<Column> result = new ArrayList<>();
+
 
         AccessType accessType = getAccessType(classElement);
         reporter.print(NOTE, "Access type is " + accessType);
         if(accessType == null) {
-            return result;
+            return new ArrayList<>();
         }
 
-        if(AccessType.FIELD.equals(accessType)) {
-            reporter.print(NOTE, "parse columns from fields");
-
-            result = parseFromFields(classElement);
-        } else {
-            reporter.print(NOTE, "parse columns from get methods");
-
-            result = parseFromGetMethods(classElement);
-        }
-
-        return result;
+        return doParseColumns(classElement, accessType);
     }
 
 
@@ -70,8 +59,10 @@ public class ColumnParser {
         for( Element element: classElement.getEnclosedElements()) {
 
             AnnotationMirror idAnnotation = ParseUtil.getAnnotationMirrorFromElement(element, Id.class);
+            AnnotationMirror embeddedIdAnnotation =
+                    ParseUtil.getAnnotationMirrorFromElement(element, EmbeddedId.class);
 
-            if(idAnnotation != null) {
+            if(idAnnotation != null || embeddedIdAnnotation!=null) {
 
                 if (isFieldElement(element)) {
                     return AccessType.FIELD;
@@ -81,28 +72,63 @@ public class ColumnParser {
             }
         }
 
+        TypeElement superClass = getSuperClassElement(classElement);
+        if(superClass != null) {
+            return getAccessType(superClass);
+        }
+
+        return AccessType.PROPERTY;
+    }
+
+    private TypeElement getSuperClassElement(TypeElement classElement) {
         if(classElement.getSuperclass() != null) {
             TypeElement superClass = treeUtil.getTypeElement(classElement.getSuperclass().toString());
 
             if(ParseUtil.getAnnotationMirrorFromElement(superClass, MappedSuperclass.class) != null) {
-                return getAccessType(superClass);
+                return superClass;
             }
         }
         return null;
     }
 
-    private List<Column> parseFromFields(TypeElement classElement) {
+    private List<Column> doParseColumns(TypeElement classElement, AccessType accessType) {
         List<Column> result = new ArrayList<>();
 
         for( Element element: classElement.getEnclosedElements()) {
-            if (!(isFieldElement(element)) ||
-                element.getModifiers().contains(Modifier.STATIC)) {
+
+            if(element.getModifiers().contains(Modifier.STATIC)) {
                 continue;
             }
 
-            reporter.print(NOTE, "create column for field element " + element.getSimpleName());
+            if (AccessType.FIELD.equals(accessType)  &&
+                !(isFieldElement(element))
+                ) {
+                continue;
+            }
 
-            reporter.print(NOTE, "element type " + element.asType());
+            if (AccessType.PROPERTY.equals(accessType)) {
+                if(!(element instanceof ExecutableElement)) {
+                    continue;
+                }
+
+                ExecutableElement exeElement = (ExecutableElement) element;
+                if (!(isMethodElement(element)) ||
+                    !element.getSimpleName().toString().startsWith("get") ||
+                    !exeElement.getParameters().isEmpty() ) {
+                    continue;
+                }
+            }
+
+            reporter.print(NOTE, "create column for element " + element.getSimpleName());
+            reporter.print(NOTE, "element type " + getJavaPropertyType(element));
+
+            List<Column> embeddedPkColumns = doParseEmbeddedPk(element, accessType);
+
+            if(!embeddedPkColumns.isEmpty()) {
+                result.addAll(embeddedPkColumns);
+                continue;
+            }
+
 
             Column column = new Column();
 
@@ -110,38 +136,36 @@ public class ColumnParser {
             result.add(column);
         }
 
-        return result;
-    }
-
-    private List<Column> parseFromGetMethods(TypeElement classElement) {
-        List<Column> result = new ArrayList<>();
-
-        for( Element element: classElement.getEnclosedElements()) {
-            if(!(element instanceof ExecutableElement)) {
-                continue;
-            }
-
-            ExecutableElement exeElement = (ExecutableElement) element;
-
-            if (!(isMethodElement(element)) ||
-                 element.getModifiers().contains(Modifier.STATIC) ||
-                 !element.getSimpleName().toString().startsWith("get") ||
-                 !exeElement.getParameters().isEmpty() ) {
-                continue;
-            }
-
-            reporter.print(NOTE, "create column for get method " + exeElement.getSimpleName());
-
-            reporter.print(NOTE, "element type " + exeElement.getReturnType());
-
-            Column column = new Column();
-
-            updateColumnObj(column, element);
-            result.add(column);
+        TypeElement superClass = getSuperClassElement(classElement);
+        if(superClass!=null) {
+            result.addAll(doParseColumns(superClass, accessType));
         }
 
         return result;
     }
+
+    private List<Column> doParseEmbeddedPk(Element element, AccessType accessType) {
+        AnnotationMirror embeddedIdAnnotation =
+                getAnnotationMirrorFromElement(element, javax.persistence.EmbeddedId.class);
+
+        if(embeddedIdAnnotation != null) {
+
+            TypeElement embedType = treeUtil.getTypeElement(getJavaPropertyType(element));
+
+            AnnotationMirror embeddableAnnotation =
+                    getAnnotationMirrorFromElement(embedType, Embeddable.class);
+
+            if (embeddableAnnotation != null) {
+                List<Column> embeddedColumns = doParseColumns(embedType, accessType);
+                embeddedColumns.forEach(c -> c.setPrimaryKey(true));
+                return embeddedColumns;
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+
 
     private void updateColumnObj(Column column, Element element) {
         column.setComment(treeUtil.getDocComment(element));
