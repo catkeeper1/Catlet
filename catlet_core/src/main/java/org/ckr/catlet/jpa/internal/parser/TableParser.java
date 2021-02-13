@@ -19,9 +19,13 @@ public class TableParser {
     private Reporter reporter;
     private Elements treeUtil;
 
+    private IndexParser indexParser;
+
     public TableParser(Reporter reporter, Elements treeUtil) {
         this.reporter = reporter;
         this.treeUtil = treeUtil;
+
+        indexParser = new IndexParser(reporter, treeUtil);
     }
 
     public List<Table> parseTables(Set<? extends Element> set) {
@@ -64,6 +68,8 @@ public class TableParser {
         ColumnParser columnParser = new ColumnParser(reporter, treeUtil);
 
         table.setColumnList(columnParser.parseColumns(typeElement));
+
+        indexParser.parseIndexes(typeElement);
 
         reporter.print(NOTE, "parsed table: " + table);
 
