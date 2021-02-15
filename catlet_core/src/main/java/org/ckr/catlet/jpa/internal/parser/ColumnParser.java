@@ -11,6 +11,7 @@ import javax.lang.model.util.Elements;
 import javax.persistence.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -202,5 +203,17 @@ public class ColumnParser {
         column.setImplicitName(NamingStrategyHolder.getStrategy().getColumnName(element));
         column.setJavaFieldType(ParseUtil.getJavaPropertyType(element));
         column.setJavaPropertyName(ParseUtil.getJavaPropertyName(element));
+    }
+
+    public static Column findByName(String columnName, Collection<Column> columnList) {
+
+        for (Column column: columnList) {
+            if(columnName.equals(column.getExplicitName()) ||
+               columnName.equals(column.getImplicitName())) {
+                return column;
+            }
+        }
+
+        return null;
     }
 }
