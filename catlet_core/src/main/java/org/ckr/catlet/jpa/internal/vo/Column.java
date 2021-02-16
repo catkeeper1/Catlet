@@ -16,7 +16,7 @@ public class Column {
 
     private Integer scale;
 
-    private String javaPropertyName;
+    private String javaElementName;
 
     private String ImplicitName;
 
@@ -25,6 +25,8 @@ public class Column {
     private String javaFieldType;
 
     private String comment;
+
+    private String enclosingClassName;
 
 
 
@@ -76,12 +78,12 @@ public class Column {
         this.scale = scale;
     }
 
-    public String getJavaPropertyName() {
-        return javaPropertyName;
+    public String getJavaElementName() {
+        return javaElementName;
     }
 
-    public void setJavaPropertyName(String javaPropertyName) {
-        this.javaPropertyName = javaPropertyName;
+    public void setJavaElementName(String javaElementName) {
+        this.javaElementName = javaElementName;
     }
 
     public String getImplicitName() {
@@ -116,6 +118,14 @@ public class Column {
         this.comment = comment;
     }
 
+    public String getEnclosingClassName() {
+        return enclosingClassName;
+    }
+
+    public void setEnclosingClassName(String enclosingClassName) {
+        this.enclosingClassName = enclosingClassName;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ", Column.class.getSimpleName() + "[", "]")
@@ -125,11 +135,12 @@ public class Column {
                 .add("length=" + length)
                 .add("precision=" + precision)
                 .add("scale=" + scale)
-                .add("javaPropertyName='" + javaPropertyName + "'")
+                .add("javaElementName='" + javaElementName + "'")
                 .add("ImplicitName='" + ImplicitName + "'")
                 .add("explicitName='" + explicitName + "'")
                 .add("javaFieldType='" + javaFieldType + "'")
                 .add("comment='" + comment + "'")
+                .add("enclosingClassName='" + enclosingClassName + "'")
                 .toString();
     }
 }

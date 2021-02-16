@@ -32,4 +32,12 @@ public class StringUtil {
         }
         return result.toString();
     }
+
+    public static String genIndent(int noOfWhiteSpace) {
+        StringBuilder result = new StringBuilder("");
+        for (int i = 0; i < noOfWhiteSpace; i++) {
+            result.append("    ");
+        }
+        return result.toString();
+    }
 }

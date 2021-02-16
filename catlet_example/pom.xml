@@ -65,6 +65,9 @@
                             <version>1.0-SNAPSHOT</version>
                         </artifact>
                     </docletArtifacts>
+                    <additionalOptions>
+                        <additionalOption>-output</additionalOption>
+                    </additionalOptions>
                     <useStandardDocletOptions>false</useStandardDocletOptions>
 
 
@@ -74,6 +77,10 @@
                     <reportSet>
                         <id>javadoc</id>
                         <configuration>
+                            <additionalOptions>
+                                <additionalOption>-output</additionalOption>
+                                <additionalOption>${project.build.directory}</additionalOption>
+                            </additionalOptions>
                         </configuration>
                         <reports>
                             <report>javadoc</report>
