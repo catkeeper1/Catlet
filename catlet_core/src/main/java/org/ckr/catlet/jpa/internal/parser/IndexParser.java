@@ -72,7 +72,7 @@ public class IndexParser {
 
     private List<Index.IndexColumn> parseIndexColumn(String columnList, Collection<Column> tableColumns) {
 
-        List<Index.IndexColumn> reuults = new ArrayList<>();
+        List<Index.IndexColumn> results = new ArrayList<>();
 
         StringTokenizer columnListTokenizer = new StringTokenizer(columnList, ",");
 
@@ -91,7 +91,7 @@ public class IndexParser {
 
                 if(column != null) {
                     indexColumn.setColumn(column);
-                    reuults.add(indexColumn);
+                    results.add(indexColumn);
                 }
 
                 if (columnTokenizer.hasMoreTokens()) {
@@ -101,7 +101,7 @@ public class IndexParser {
 
         }
 
-        return reuults;
+        return results;
     }
 
 
