@@ -67,7 +67,7 @@
                     </docletArtifacts>
                     <additionalOptions>
                         <additionalOption>--output</additionalOption>
-                        <additionalOption>${project.build.directory}/site/liquibase</additionalOption>
+                        <additionalOption>${project.build.directory}/site/</additionalOption>
                     </additionalOptions>
                     <useStandardDocletOptions>false</useStandardDocletOptions>
 

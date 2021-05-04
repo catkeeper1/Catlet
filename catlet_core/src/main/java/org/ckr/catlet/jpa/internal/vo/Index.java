@@ -59,10 +59,12 @@ public class Index {
 
         @Override
         public String toString() {
+
             return new StringJoiner(", ", IndexColumn.class.getSimpleName() + "[", "]")
                     .add("column=" + column)
                     .add("order='" + order + "'")
                     .toString();
+
         }
     }
 

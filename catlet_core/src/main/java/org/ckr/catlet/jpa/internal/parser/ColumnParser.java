@@ -1,18 +1,18 @@
 package org.ckr.catlet.jpa.internal.parser;
 
 import jdk.javadoc.doclet.Reporter;
-import net.sourceforge.plantuml.bpm.Col;
 import org.ckr.catlet.jpa.internal.util.ParseUtil;
 import org.ckr.catlet.jpa.internal.naming.NamingStrategyHolder;
+import org.ckr.catlet.jpa.internal.util.StringUtil;
 import org.ckr.catlet.jpa.internal.vo.Column;
 
 import javax.lang.model.element.*;
 import javax.lang.model.util.Elements;
 import javax.persistence.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.*;
 
 import static org.ckr.catlet.jpa.internal.util.ParseUtil.*;
 
@@ -96,27 +96,8 @@ public class ColumnParser {
 
         for( Element element: classElement.getEnclosedElements()) {
 
-            if(element.getModifiers().contains(Modifier.STATIC)) {
+            if(!isValidElementForColumn(element, accessType)) {
                 continue;
-            }
-
-            if (AccessType.FIELD.equals(accessType)  &&
-                !(isFieldElement(element))
-                ) {
-                continue;
-            }
-
-            if (AccessType.PROPERTY.equals(accessType)) {
-                if(!(element instanceof ExecutableElement)) {
-                    continue;
-                }
-
-                ExecutableElement exeElement = (ExecutableElement) element;
-                if (!(isMethodElement(element)) ||
-                    !element.getSimpleName().toString().startsWith("get") ||
-                    !exeElement.getParameters().isEmpty() ) {
-                    continue;
-                }
             }
 
             reporter.print(NOTE, "create column for element " + element.getSimpleName());
@@ -142,6 +123,43 @@ public class ColumnParser {
         }
 
         return result;
+    }
+
+    private boolean isValidElementForColumn(Element element, AccessType accessType) {
+        if(element.getModifiers().contains(Modifier.STATIC)) {
+            return false;
+        }
+
+        if (AccessType.FIELD.equals(accessType)  &&
+                !(isFieldElement(element))
+        ) {
+            return false;
+        }
+
+        if (AccessType.PROPERTY.equals(accessType)) {
+            if(!(element instanceof ExecutableElement)) {
+                return false;
+            }
+
+            ExecutableElement exeElement = (ExecutableElement) element;
+            if (!(isMethodElement(element)) ||
+                    !element.getSimpleName().toString().startsWith("get") ||
+                    !exeElement.getParameters().isEmpty() ) {
+                return false;
+            }
+        }
+
+        if(getAnnotationMirrorFromElement(element, ManyToMany.class) !=null ||
+           getAnnotationMirrorFromElement(element, ManyToOne.class) !=null ||
+           getAnnotationMirrorFromElement(element, OneToMany.class) !=null ||
+           getAnnotationMirrorFromElement(element, OneToOne.class) !=null ||
+           getAnnotationMirrorFromElement(element, JoinTable.class) !=null ||
+           getAnnotationMirrorFromElement(element, JoinColumn.class) !=null ||
+           getAnnotationMirrorFromElement(element, JoinColumns.class) !=null) {
+            return false;
+        }
+
+        return true;
     }
 
     private List<Column> doParseEmbeddedPk(Element element, AccessType accessType) {
@@ -201,6 +219,102 @@ public class ColumnParser {
 
         column.setImplicitName(NamingStrategyHolder.getStrategy().getColumnName(element));
         column.setJavaFieldType(ParseUtil.getJavaPropertyType(element));
-        column.setJavaPropertyName(ParseUtil.getJavaPropertyName(element));
+        column.setJavaElementName(element.getSimpleName().toString());
+
+        column.setEnclosingClassName(((TypeElement)element.getEnclosingElement()).getQualifiedName().toString());
+    }
+
+    public static Column findByName(String columnName, Collection<Column> columnList) {
+
+        for (Column column: columnList) {
+            if(columnName.equals(column.getExplicitName()) ||
+               columnName.equals(column.getImplicitName())) {
+                return column;
+            }
+        }
+
+        return null;
+    }
+
+    public static String getColumnPyhsicalName(Column column) {
+        if(!StringUtil.isEmpty(column.getExplicitName())) {
+            return column.getExplicitName();
+        }
+
+        return column.getImplicitName();
+    }
+
+    /**
+     * Get fully qualified name of the Column type.
+     *
+     * @param column Column
+     * @return ColumnType
+     */
+    public static String getColumnType(Column column) {
+        String result = "";
+
+        ColumnInfo colInfo = getDefaultColumnInfoByJavaType(column.getJavaFieldType());
+
+        result = colInfo.columnType;
+
+        if (column.getColumnDefinition() != null && column.getColumnDefinition().trim().length() > 0) {
+            result = column.getColumnDefinition();
+        }
+
+        if (column.getLength() != null) {
+            colInfo.length = column.getLength();
+        }
+
+        if (column.getScale() != null) {
+            colInfo.scale = column.getScale();
+        }
+
+        if (column.getPrecision() != null) {
+            colInfo.precision = column.getPrecision();
+        }
+
+        if (colInfo.length != null) {
+            result = colInfo.columnType + "(" + colInfo.length + ")";
+        } else if (colInfo.scale != null) {
+            result = colInfo.columnType + "(" + colInfo.scale + ", " + colInfo.precision + ")";
+        }
+
+        return result;
+    }
+
+    private static class ColumnInfo {
+        Integer length = null;
+        Integer scale = null;
+        Integer precision = null;
+        String columnType = null;
+    }
+
+    private static ColumnInfo getDefaultColumnInfoByJavaType(String javaFieldType) {
+        ColumnInfo result = new ColumnInfo();
+
+        if (String.class.getName().equals(javaFieldType)) {
+            result.length = 100;
+            result.columnType = "java.sql.Types.VARCHAR";
+        } else if (Boolean.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.BOOLEAN";
+        } else if (Date.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.DATE";
+        } else if (java.sql.Date.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.DATE";
+        } else if (Timestamp.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.TIMESTAMP";
+        } else if (Long.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.BIGINT";
+        } else if (Integer.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.INTEGER";
+        } else if (Short.class.getName().equals(javaFieldType)) {
+            result.columnType = "java.sql.Types.SMALLINT";
+        } else if (BigDecimal.class.getName().equals(javaFieldType)) {
+            result.scale = 19;
+            result.precision = 4;
+            result.columnType = "java.sql.Types.DECIMAL";
+        }
+
+        return result;
     }
 }

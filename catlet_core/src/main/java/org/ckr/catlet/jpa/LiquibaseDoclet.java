@@ -4,16 +4,16 @@ import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 import org.ckr.catlet.jpa.internal.parser.TableParser;
+import org.ckr.catlet.jpa.internal.vo.Table;
+import org.ckr.catlet.jpa.internal.writer.LiquibaseWriter;
 
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.util.Elements;
-import javax.persistence.Entity;
-import javax.tools.Diagnostic;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
 
 import static javax.tools.Diagnostic.Kind.*;
 
@@ -36,8 +36,9 @@ public class LiquibaseDoclet implements Doclet {
 
     @Override
     public Set<? extends Option> getSupportedOptions() {
+
         final Set<Option> options = Set.of(
-                // An option that takes no arguments.
+
                 new Option("--output", true, "the output folder of liquibase xml files", "<string>") {
                     @Override
                     public boolean process(String option,
@@ -47,8 +48,8 @@ public class LiquibaseDoclet implements Doclet {
                     }
                 }
         );
-
         return options;
+
     }
 
     @Override
@@ -59,14 +60,22 @@ public class LiquibaseDoclet implements Doclet {
     @Override
     public boolean run(DocletEnvironment environment) {
         Elements treeUtil = environment.getElementUtils();
-        reporter.print(NOTE, "----------------------------");
-        reporter.print(NOTE, "liquibase doclet started");
-        reporter.print(NOTE, "output folder is: " + outputFolder);
+
+        reporter.print(NOTE, "LiquibaseDoclet is started");
+        reporter.print(NOTE, "The generated xml files will be saved to folder:" + outputFolder);
+
 
         Set<? extends Element> includedElements = environment.getIncludedElements();
 
         TableParser tableParser = new TableParser(reporter, treeUtil);
-        tableParser.parseTables(includedElements);
+        List<Table> tableList = tableParser.parseTables(includedElements);
+
+        LiquibaseWriter writer = new LiquibaseWriter(outputFolder, tableList, reporter);
+
+        writer.generateDdlXmlConfigDoc();
+        writer.generateInsertXmlConfigDoc();
+        writer.generateInsertCsvTemplate();
+        writer.generateIncludeXmlConfig();
 
         return true;
     }

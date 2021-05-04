@@ -3,6 +3,8 @@ package org.ckr.catlet.jpa.internal.parser;
 import jdk.javadoc.doclet.Reporter;
 import org.ckr.catlet.jpa.internal.util.ParseUtil;
 import org.ckr.catlet.jpa.internal.naming.NamingStrategyHolder;
+import org.ckr.catlet.jpa.internal.util.StringUtil;
+import org.ckr.catlet.jpa.internal.vo.Index;
 import org.ckr.catlet.jpa.internal.vo.Table;
 
 import javax.lang.model.element.*;
@@ -69,7 +71,9 @@ public class TableParser {
 
         table.setColumnList(columnParser.parseColumns(typeElement));
 
-        indexParser.parseIndexes(typeElement);
+        List<Index> indexList = indexParser.parseIndexes(typeElement, table.getColumnList());
+
+        table.setIndexList(indexList);
 
         reporter.print(NOTE, "parsed table: " + table);
 
@@ -99,6 +103,14 @@ public class TableParser {
 
         return NamingStrategyHolder.getStrategy().getTableName(typeElement);
 
+    }
+
+    public static String getTablePyhsicalName(Table table) {
+        if(!StringUtil.isEmpty(table.getExplicitName())) {
+            return table.getExplicitName();
+        }
+
+        return table.getImplicitName();
     }
 
 

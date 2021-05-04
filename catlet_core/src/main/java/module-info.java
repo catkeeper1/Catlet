@@ -8,4 +8,5 @@ module org.ckr.catlet {
     requires plantuml;
     requires java.logging;
     requires hibernate.jpa;
+    requires java.sql;
 }

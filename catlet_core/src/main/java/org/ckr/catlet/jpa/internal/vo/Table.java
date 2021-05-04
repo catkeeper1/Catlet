@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
+import static org.ckr.catlet.jpa.internal.util.StringUtil.printCollection;
+
 public class Table {
     private String implicitName;
 
@@ -88,15 +90,16 @@ public class Table {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", Table.class.getSimpleName() + "[", "]")
-                .add("implicitName='" + implicitName + "'")
-                .add("explicitName='" + explicitName + "'")
-                .add("packageName='" + packageName + "'")
-                .add("className='" + className + "'")
-                .add("indexList=" + indexList)
-                .add("columnList=" + columnList)
-                .add("foreignKeyList=" + foreignKeyList)
-                .add("comment='" + comment + "'")
-                .toString();
+        final StringBuilder sb = new StringBuilder("Table{").append("\n");
+        sb.append("  implicitName='").append(implicitName).append('\'').append("\n");
+        sb.append(", explicitName='").append(explicitName).append('\'').append("\n");
+        sb.append(", packageName='").append(packageName).append('\'').append("\n");
+        sb.append(", className='").append(className).append('\'').append("\n");
+        sb.append(", indexList=").append(printCollection(indexList, 4));
+        sb.append(", columnList=").append(printCollection(columnList, 4 ));
+        sb.append(", foreignKeyList=").append(printCollection(foreignKeyList, 4));
+        sb.append(", comment='").append(comment).append('\'').append("\n");
+        sb.append('}').append("\n");
+        return sb.toString();
     }
 }
