@@ -9,7 +9,7 @@ import javax.persistence.*;
  * Created by Administrator on 2017/11/4.
  */
 @Entity()
-@Table(name = "FUNCTION_POINTA")
+@Table(name = "FUNCTION_POINT")
 @Access(AccessType.FIELD)
 public class FunctionPoint  {
 
@@ -26,8 +26,6 @@ public class FunctionPoint  {
     private String functionPointDescription;
 
     private int intValue;
-
-    private int[] intArray;
 
     public String getFunctionPointCode() {
         return functionPointCode;

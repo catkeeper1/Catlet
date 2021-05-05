@@ -305,7 +305,8 @@ public class ColumnParser {
             result.columnType = "java.sql.Types.TIMESTAMP";
         } else if (Long.class.getName().equals(javaFieldType)) {
             result.columnType = "java.sql.Types.BIGINT";
-        } else if (Integer.class.getName().equals(javaFieldType)) {
+        } else if (Integer.class.getName().equals(javaFieldType) ||
+                   "int".equals(javaFieldType)) {
             result.columnType = "java.sql.Types.INTEGER";
         } else if (Short.class.getName().equals(javaFieldType)) {
             result.columnType = "java.sql.Types.SMALLINT";

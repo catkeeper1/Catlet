@@ -5,6 +5,7 @@ import jdk.javadoc.doclet.Reporter;
 import org.ckr.catlet.jpa.internal.exception.DocletException;
 import org.ckr.catlet.jpa.internal.util.FileUtil;
 import org.ckr.catlet.jpa.internal.util.FileWriterTemplate;
+import org.ckr.catlet.jpa.internal.util.StringUtil;
 import org.ckr.catlet.jpa.internal.vo.Column;
 import org.ckr.catlet.jpa.internal.vo.Index;
 import org.ckr.catlet.jpa.internal.vo.Table;
@@ -38,7 +39,7 @@ public class LiquibaseWriter {
                     + "        xmlns=\"http://www.liquibase.org/xml/ns/dbchangelog\"" + ENTER
                     + "        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ENTER
                     + "        xsi:schemaLocation=\"http://www.liquibase.org/xml/ns/dbchangelog" + ENTER
-                    + "         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd\">" + ENTER;
+                    + "        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd\">" + ENTER;
 
     private static final String DOC_END = "</databaseChangeLog>";
 
@@ -109,7 +110,7 @@ public class LiquibaseWriter {
      *         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
      *         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      *         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-     *          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"&#62;
+     *         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd"&#62;
      *     &#60;changeSet author="liquibase-docs" id="createTable-org.ckr.msdemo.adminservice.entity.MENU"&#62;
      *
      *         &#60;createTable tableName="MENU"&#62;
@@ -240,9 +241,14 @@ public class LiquibaseWriter {
 
             for (Index.IndexColumn indexColumn : index.getColumnList()) {
 
-                String physicalColumnName = getColumnPyhsicalName(indexColumn.getColumn());
-                writter.write(genIndent(3) + COLUMN_TAG_START + physicalColumnName + "\"/>" + ENTER);
+                String columnName = getColumnPyhsicalName(indexColumn.getColumn());
+                writter.write(genIndent(3) + COLUMN_TAG_START + columnName + "\"");
 
+                if(Index.Order.DESC.equals(indexColumn.getOrder())) {
+                    writter.write(" descending=\"true\"");
+                }
+
+                writter.write("/>" + ENTER);
             }
 
             writter.write(genIndent(2) + "</createIndex>" + ENTER);

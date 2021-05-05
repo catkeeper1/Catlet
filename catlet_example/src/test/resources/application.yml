@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+  liquibase:
+    change-log: classpath:db.changelog_master.xml
+    contexts: UT
+
+
+logging:
+  root.level: DEBUG
+  level:
+    org.hibernate.SQL: DEBUG
+    org.ckr: DEBUG

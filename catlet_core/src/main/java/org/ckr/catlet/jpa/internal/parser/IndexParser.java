@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static javax.tools.Diagnostic.Kind.NOTE;
+import static org.ckr.catlet.jpa.internal.util.ParseUtil.getAnnotationAttributeBooleanValue;
 import static org.ckr.catlet.jpa.internal.util.ParseUtil.getAnnotationAttributeStringValue;
 
 import java.util.Collection;
@@ -49,25 +50,30 @@ public class IndexParser {
                 List indexAnnotationValues = (List)indexesAnnotationValue.getValue();
 
                 indexAnnotationValues.forEach(indexAnnotation -> {
-                    Index index = new Index();
-
                     AnnotationMirror indexMirror = (AnnotationMirror) indexAnnotation;
 
-                    index.setName(getAnnotationAttributeStringValue("name", indexMirror));
+                    Index index = parseIndex(indexMirror, tableColumns);
 
-
-                    indexMirror.getElementValues().keySet().forEach(k -> reporter.print(NOTE, "================ " + k.getClass() + ":" + indexMirror.getElementValues().get(k).getValue() ));
-
-                    reporter.print(NOTE,index.toString());
+                    reporter.print(NOTE,"parsed index:" + index.toString());
                     resultList.add(index);
 
                 });
 
             }
-
         }
         return resultList;
+    }
 
+    private Index parseIndex(AnnotationMirror indexMirror, Collection<Column> tableColumns) {
+        Index index = new Index();
+        index.setName(getAnnotationAttributeStringValue("name", indexMirror));
+        index.setUnique(getAnnotationAttributeBooleanValue("unique", indexMirror));
+
+        String columnList = getAnnotationAttributeStringValue("columnList", indexMirror);
+
+        index.setColumnList(parseIndexColumn(columnList, tableColumns));
+
+        return index;
     }
 
     private List<Index.IndexColumn> parseIndexColumn(String columnList, Collection<Column> tableColumns) {
@@ -75,7 +81,6 @@ public class IndexParser {
         List<Index.IndexColumn> results = new ArrayList<>();
 
         StringTokenizer columnListTokenizer = new StringTokenizer(columnList, ",");
-
 
         while (columnListTokenizer.hasMoreTokens()) {
             String columnValue = columnListTokenizer.nextToken();
@@ -95,7 +100,14 @@ public class IndexParser {
                 }
 
                 if (columnTokenizer.hasMoreTokens()) {
-                    indexColumn.setOrder(columnTokenizer.nextToken());
+                    String orderStr = columnTokenizer.nextToken();
+
+                    if("ASC".equals(orderStr.toUpperCase())) {
+                        indexColumn.setOrder(Index.Order.ASC);
+                    } else if("DESC".equals(orderStr.toUpperCase())) {
+                        indexColumn.setOrder(Index.Order.DESC);
+                    }
+
                 }
             }
 

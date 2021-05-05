@@ -35,11 +35,16 @@ public class Index {
         this.unique = unique;
     }
 
+    public enum Order {
+        ASC,
+        DESC
+    }
+
     public static class IndexColumn {
 
         private Column column;
 
-        private String order = null;
+        private Order order = null;
 
         public Column getColumn() {
             return column;
@@ -49,19 +54,22 @@ public class Index {
             this.column = column;
         }
 
-        public String getOrder() {
+        public Order getOrder() {
             return order;
         }
 
-        public void setOrder(String order) {
+        public void setOrder(Order order) {
             this.order = order;
         }
 
         @Override
         public String toString() {
 
+            String columnName =
+                    column.getExplicitName() == null ? column.getImplicitName() : column.getExplicitName();
+
             return new StringJoiner(", ", IndexColumn.class.getSimpleName() + "[", "]")
-                    .add("column=" + column)
+                    .add("column=" + columnName)
                     .add("order='" + order + "'")
                     .toString();
 
