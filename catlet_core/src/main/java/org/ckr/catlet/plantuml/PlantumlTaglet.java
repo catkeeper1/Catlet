@@ -36,31 +36,69 @@ import java.util.logging.Logger;
 /**
  * This taglet is used to process plantuml diagram embeded in javadoc.
  *
+ * If you place below plantuml source in a javadoc comment:
+ *
  * <pre><code>
- * &#60;img alt="example image" src = "exampleImg.svg"&#62;
+ * &#60;img alt="example image" src = "exampleImg1.svg"&#62;
+ * &#60;img alt="example image" src = "exampleImg2.svg"&#62;
  * &#60;!--
- *  &#64;startuml exampleImg.svg
+ *  &#64;startuml exampleImg1.svg
  *  Class01 &#60;|-- Class02
  *  Class03 *-- Class04
  *  Class05 o-- Class06
  *  Class07 .. Class08
  *  Class09 &#60;-- Class10
  *  &#64;enduml
+ *
+ *
+ *  &#64;startuml exampleImg1.svg
+ *  State1 &#60;-- [*]
+ *  [*] &#60;-- State1
+ *  State1 : this is a string
+ *  State1 : this is another string
+ *  State2 &#60;- State1
+ *  [*] &#60;-- State2
+ *
  *  --&#62;
+ *  &#64;plantuml
  * </code></pre>
  *
- * <pre><code>&#64;plantuml</code></pre>
- * <img alt="example image" src = "exampleImg.svg">
+ *
+ * you can see below diagram:
+ * <p>
+ * <img alt="example image" src = "exampleImg1.svg">
+ * <img alt="example image1" src = "exampleImg2.svg">
+ *
+ * <p>Please notes that:
+ * <ul>
+ *     <li>Never use --&#62; in the plantuml source since it will break
+ *         the comment. Please always use &#60;-- to replace --&#62;
+ *     <li>Always place the plantuml source to the end of javadoc. Otherwise text
+ *     after the plantuml source cannot be displayed.
+ * </ul>
+
  <!--
- @startuml   exampleImg.svg
+ @startuml   exampleImg1.svg
  Class01 <|-- Class02
  Class03 *-- Class04
  Class05 o-- Class06
  Class07 .. Class08
  Class09 <-- Class10
  @enduml
+
+
+ @startuml   exampleImg2.svg
+ State1 <-- [*]
+ [*] <-- State1
+ State1 : this is a string
+ State1 : this is another string
+ State2 <- State1
+ [*] <-- State2
+ @enduml
  -->
  @plantuml
+ *
+ *
  *
  *
  */
@@ -122,36 +160,35 @@ public class PlantumlTaglet implements Taglet {
             LogUtil.log("comment block detected.");
             CommentTree commentTree = (CommentTree) bodyItem;
 
-            ParseResult parseResult = parseUmlDiagram(commentTree.getBody());
+            List<ParseResult> parseResultList = parseUmlDiagram(commentTree.getBody());
 
-            if(parseResult == null) {
-                continue;
-            }
+            for (ParseResult parseResult: parseResultList) {
 
-            LogUtil.log("parse result is:\r\n" + parseResult);
+                LogUtil.log("parse result is:\r\n" + parseResult);
 
-            FileObject output = null;
-            try {
-                output = javaFileManager.getFileForOutput(DocumentationTool.Location.DOCUMENTATION_OUTPUT,
-                        pkg,
-                        parseResult.getFileName(),
-                        null);
+                FileObject output = null;
+                try {
+                    output = javaFileManager.getFileForOutput(DocumentationTool.Location.DOCUMENTATION_OUTPUT,
+                            pkg,
+                            parseResult.getFileName(),
+                            null);
 
-            } catch (IOException e) {
-                LogUtil.log("cannot locate the output file.", e);
-                return "";
-            }
-            LogUtil.log("output file " + output.toUri());
+                } catch (IOException e) {
+                    LogUtil.log("cannot locate the output file.", e);
+                    return "";
+                }
+                LogUtil.log("output file " + output.toUri());
 
-            String umlSource = parseResult.getFileContent();
+                String umlSource = parseResult.getFileContent();
 
-            SourceStringReader reader = new SourceStringReader(umlSource);
+                SourceStringReader reader = new SourceStringReader(umlSource);
 
-            try(OutputStream outputStream = output.openOutputStream()) {
-                reader.outputImage(outputStream, new FileFormatOption(FileFormat.SVG));
-            } catch (IOException ioe) {
-                LogUtil.log("cannot write image file.", ioe);
-                return "";
+                try (OutputStream outputStream = output.openOutputStream()) {
+                    reader.outputImage(outputStream, new FileFormatOption(FileFormat.SVG));
+                } catch (IOException ioe) {
+                    LogUtil.log("cannot write image file.", ioe);
+                    return "";
+                }
             }
 
         }
@@ -159,8 +196,8 @@ public class PlantumlTaglet implements Taglet {
         return "";
     }
 
-    private ParseResult parseUmlDiagram(String commentBody) {
-
+    private List<ParseResult> parseUmlDiagram(String commentBody) {
+        List<ParseResult> results = new ArrayList<>();
         String fileName = null;
         StringBuilder fileContent = new StringBuilder();
 
@@ -172,7 +209,7 @@ public class PlantumlTaglet implements Taglet {
                 line = reader.readLine();
             } catch (IOException e) {
                 LogUtil.log("cannot readline.", e);
-                return null;
+                return results;
             }
 
             if(line == null) {
@@ -182,6 +219,8 @@ public class PlantumlTaglet implements Taglet {
             String trimLine = line.trim();
             if("NOT_STARTED".equals(status) &&
                trimLine.startsWith("@startuml")) {
+
+                fileContent.delete(0, fileContent.length());
 
                 fileContent.append("@startuml\r\n");
                 fileName = trimLine.substring(9);
@@ -196,8 +235,10 @@ public class PlantumlTaglet implements Taglet {
                 if(trimLine.contains("@enduml")) {
                     fileContent.append("@enduml\r\n");
 
-                    status = "COMPLETED";
-                    break;
+                    results.add(new ParseResult(fileName, fileContent.toString()));
+
+                    status = "NOT_STARTED";
+
                 }
 
                 fileContent.append(trimLine);
@@ -207,11 +248,9 @@ public class PlantumlTaglet implements Taglet {
 
         } while(true);
 
-        if("COMPLETED".equals(status)) {
-            return new ParseResult(fileName, fileContent.toString());
-        }
 
-        return null;
+
+        return results;
     }
 
     private String getPackageName(Element element) {

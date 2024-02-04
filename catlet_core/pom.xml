@@ -23,8 +23,8 @@
     <dependencies>
         <dependency>
             <groupId>net.sourceforge.plantuml</groupId>
-            <artifactId>plantuml</artifactId>
-            <version>1.2021.5</version>
+            <artifactId>plantuml-mit</artifactId>
+            <version>1.2023.13</version>
         </dependency>
 
         <dependency>
@@ -62,16 +62,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.6.3</version>
                 <configuration>
                     <show>protected</show>
                     <docencoding>UTF-8</docencoding>
                     <encoding>UTF-8</encoding>
                     <charset>UTF-8</charset>
-                    <!-- 8 must be used here. If use >=9, the javadoc command will try to build the document
-                    in module mode. Since the JDK classes are not under any module, when the javadoc try to link
-                    those classes's offline document, the javadoc command will return error.-->
-                    <source>8</source>
+
+                    <source>17</source>
                     <!--<detectJavaApiLink>false</detectJavaApiLink>-->
                     <taglets>
                         <taglet>
